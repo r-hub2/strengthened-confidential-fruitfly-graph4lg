@@ -1,0 +1,25 @@
+citHeader("To cite graph4lg in publications use:")
+
+bibentry(
+  bibtype = "Article",
+  title = "{graph4lg}: a package for constructing and analysing graphs for landscape genetics in R",
+  journal = "Methods in Ecology and Evolution",
+  volume = "12",
+  number = "3",
+  pages = "539-547",
+  year = "2021",
+  author = c(person(given = "Paul",
+             family = "Savary",
+             role = c("aut", "cre"),
+             email = "psavary@protonmail.com",
+             comment = c(ORCID = "0000-0002-2104-9941")),
+	  person(given = "Gilles",
+             family = "Vuidel"),
+      person(given = "Jean-Christophe",
+             family = "Foltête"),
+      person(given = "Hervé",
+             family = "Moal"),
+      person(given = "Stéphane",
+             family = "Garnier")),
+  doi = "10.1111/2041-210X.13530"
+)
