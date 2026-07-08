@@ -16,7 +16,17 @@ vignette: >
   %\VignetteEncoding{UTF-8}
 ---
   
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+collapse = TRUE,
+comment = "#>"
+)
 
+library(graph4lg)
+library(igraph)
+library(ggplot2)
+
+```
 
 # Introduction
 
@@ -45,8 +55,7 @@ Integrating Graphab functionalities into `graph4lg` aims at facilitating the imp
 
 The function `get_graphab` from `graph4lg` package **automatically downloads Graphab 3.0** in the user's machine, provided Java is installed on the machine. If it has already been downloaded, a message is displayed. Once Graphab has been downloaded in a machine, it is not necessary to download it again. Note that users familiar with the functions calling `graphab-2.8.jar` can still use the previous versions of `graph4lg` by installing them from the [gitlab repository of the package](https://gitlab.com/psavary3/graph4lg). 
 
-
-```r
+```{r, eval = FALSE}
 get_graphab()
 ```
 
@@ -82,7 +91,10 @@ In the table below, we present **all the functions from `graph4lg` calling Graph
 
 Here, we do not rely on genetic data sets and will only use Graphab projects already created for the vignettes.
 
-
+```{r, echo = FALSE, eval = TRUE}
+load(file = paste0(system.file('extdata', package = 'graph4lg'), 
+                   "/", "res_g.RDa"))
+```
 
 
 # Landscape graph construction 
@@ -107,8 +119,7 @@ The three last arguments are included in almost every function calling Graphab, 
 
 As an example, we will create a landscape graph from a simulated landscape raster with 5 land use categories (see map below).
 
-
-```r
+```{r}
 rast <- terra::rast(paste0(system.file('extdata', package = 'graph4lg'), 
                    "/", "rast_simul50.tif"))
 # convert the raster into a df while keeping coords
@@ -128,21 +139,21 @@ g <- ggplot(r_df, aes(x = x, y = y)) +
                     name = "Land use type")+
   labs(x="Longitude",y="Latitude")
 g
-```
 
-![plot of chunk unnamed-chunk-3](figure/unnamed-chunk-3-1.png)
+```
 
 We can create a project to assess habitat connectivity in this landscape using the following command:
 
-
-```r
+```{r, eval = FALSE}
 proj_name <- "graphab_example"
 
 graphab_project(proj_name = proj_name,
                 raster = "rast_simul50.tif")
 
 ```
-
+```{r, echo = FALSE, eval = TRUE}
+proj_name <- "graphab_example"
+```
 
 
 ## Habitat creation
@@ -164,8 +175,7 @@ Once the project has been created, we can use the function `graphab_habitat` to 
 
 Here, we create a first habitat type with habitat patches corresponding to contiguous patches of raster cells equal to 0 or 5, as soon as they are larger than 200 hectares. We assume they correspond to forests.
 
-
-```r
+```{r, eval = FALSE}
 # Habitat creation
 graphab_habitat(proj_name = proj_name, 
                 name = "forest",
@@ -178,8 +188,7 @@ graphab_habitat(proj_name = proj_name,
 
 Since Graphab 3.0, it is possible to include several types of habitats in the same Graphab project. We illustrate that below by creating an habitat type corresponding to shrubland patches. 
 
-
-```r
+```{r, eval = FALSE}
 # Bushland
 graphab_habitat(proj_name = proj_name,
                 name = "shrubland",
@@ -190,18 +199,21 @@ graphab_habitat(proj_name = proj_name,
 
 We can check that the two habitat types have been successfully created by listing the elements of the project, using the `graphab_show` function. Its only argument is the path to the .xml file storing all the project information:
 
-
-```r
+```{r, eval = FALSE}
 graphab_show(proj_path = "graphab_example/graphab_example.xml")
 ```
 
+```{r, echo = FALSE, eval = FALSE}
+graphab_show(proj_path = paste0(system.file('extdata', 
+                                            package = 'graph4lg'), 
+                   "/", "graphab_example/graphab_example.xml"))
 
+```
 
 
 Since Graphab 3.0, it is also possible to create habitat types by providing the corresponding patches as point or polygon entities of a geopackage or shapefile vectorial layer. In this case, a column of the attribute table must include the values used to set the capacity of the habitat patches. The name of this column is provided with the argument `vec_capa_field`. For example:
 
-
-```r
+```{r, eval = FALSE}
 graphab_habitat(proj_name = proj_name,
                 name = "grassland",
                 type = "vector",
@@ -228,19 +240,11 @@ The link set can be built as the set of straight lines ("as the crow flies") con
 
 They are stored into the `cost` object (`data.frame`):
 
-
-```r
+```{r}
 cost <- data.frame(code = 0:5,
                    cost = c(1, 5, 60, 40, 1000, 1))
 
 print(cost)
-#>   code cost
-#> 1    0    1
-#> 2    1    5
-#> 3    2   60
-#> 4    3   40
-#> 5    4 1000
-#> 6    5    1
 ```
 
 The link set is created based on these assumptions with the `graphab_link` function, which takes the main following arguments:
@@ -261,8 +265,7 @@ Since Graphab 3.0, when there are multiple habitat types in the project, users h
 
 In our example, we first create a planar link set using cost-distances to connect forest patches:
 
-
-```r
+```{r, eval=FALSE}
 
 graphab_link(proj_name = proj_name,
              distance = "cost",
@@ -275,8 +278,7 @@ graphab_link(proj_name = proj_name,
 
 We can create a similar link set for shrubland patches:
 
-
-```r
+```{r, eval=FALSE}
 
 graphab_link(proj_name = proj_name,
              distance = "cost",
@@ -289,8 +291,7 @@ graphab_link(proj_name = proj_name,
 
 To create a link set connecting only forest patches to shrubland patches (and reciprocally), we can select these two habitat types for the computation and add `inter = TRUE`, as follows:
 
-
-```r
+```{r, eval=FALSE}
 
 graphab_link(proj_name = proj_name,
              distance = "cost",
@@ -307,37 +308,51 @@ graphab_link(proj_name = proj_name,
 
 We can load the cost-distance values resulting from these computations in R using the `get_graphab_linkset` function. The result is returned as a data.frame.
 
-
-```r
+```{r, eval = FALSE}
 link_forest <- get_graphab_linkset(proj_name = proj_name,
                                    linkset = "forest_link_planar")
 print(link_forest[1:6, ])
 ```
 
-
+```{r, echo = FALSE, eval = FALSE}
+link_forest <- get_graphab_linkset(proj_name = proj_name,
+                                   linkset = "forest_link_planar",
+                                   proj_path = system.file('extdata', 
+                                            package = 'graph4lg'))
+print(link_forest[1:6, ])
+```
 
 
 Similarly, we can recover the parameters used to create a given link set with the `get_graphab_linkset_cost` or `graphab_project_desc` functions.
 
-
-```r
+```{r, eval = FALSE}
 link_param <- get_graphab_linkset_cost(proj_name = proj_name,
                                       linkset = "forest_link_planar")
+
+print(link_param)
+```
+```{r, echo = FALSE, eval = FALSE}
+link_param <- get_graphab_linkset_cost(proj_name = proj_name,
+                                       proj_path = system.file('extdata', 
+                                            package = 'graph4lg'),
+                    linkset = "forest_link_planar")
 
 print(link_param)
 ```
 
 
 
-
 The `graphab_project_desc` function provides information about all the elements of the project:
 
-
-```r
+```{r, eval = FALSE}
 graphab_project_desc(proj_name = proj_name)
 ```
 
-
+```{r, echo = FALSE, eval = FALSE}
+graphab_project_desc(proj_name = proj_name,
+                     proj_path = system.file('extdata', 
+                                            package = 'graph4lg'))
+```
 
 ## Graph construction
 
@@ -355,8 +370,7 @@ Since a link set is necessarily associated with one or several habitat types, th
 
 In our example, we can create a planar graph with the following command:
 
-
-```r
+```{r, eval=FALSE}
 graphab_graph(proj_name = proj_name,
               linkset = "forest_link_planar",
               name = "graph_forest")
@@ -365,8 +379,7 @@ graphab_graph(proj_name = proj_name,
 
 If we select a linkset linking multiple habitat types, the graph will have nodes corresponding to multiple types of habitats. In the present case, since the only linkset connecting multiple habitat types only includes *inter*-links among patches of different types, if we want to include both *intra*- and *inter*-links in the graph, we can create 1 graph for each of the linksets (2 *intra* and 1 *inter*) and then merge the 3 graphs into one using the `graphab_merge_graph` function (created for that purpose). We would proceed as follows:
 
-
-```r
+```{r, eval = FALSE}
 # Forest graph
 graphab_graph(proj_name = proj_name,
               linkset = "forest_link_planar",
@@ -431,8 +444,7 @@ The description of every metric is beyond the scope of this tutorial. We again i
 
 We will compute metrics on the graph `"graph_forest"` in our example. First, we will compute the probability of connectivity at the global level. We set the `dist` and `prob` parameter such that: $p(10km)=e^{-\alpha \times d_{ij}}=0.05$. We convert 10 km in cost-distance units for the computation.
 
-
-```r
+```{r, eval=FALSE}
 # Global metric: PC
 pc <- graphab_metric(proj_name = proj_name,
                graph = "graph_forest",
@@ -444,14 +456,8 @@ pc <- graphab_metric(proj_name = proj_name,
 pc
 ```
 
-
-```
-#> $`Metric name`
-#> [1] "pc_d1479.8358851873484_p0.05_graph_forest"
-#> 
-#> $`Metric value table`
-#>          Graph        d    p beta           PC
-#> 1 graph_forest 1479.836 0.05    1 0.0007436003
+```{r, echo = FALSE}
+res_g[["PC"]]
 ```
 
 
@@ -461,8 +467,7 @@ We obtain the value in an object of class `list`.
 
 Now, using the same parameters, we compute the local metric Flux.
 
-
-```r
+```{r, eval=FALSE}
 f <- graphab_metric(proj_name = proj_name,
                     graph = "graph_forest",
                     metric = "F",
@@ -471,21 +476,13 @@ f <- graphab_metric(proj_name = proj_name,
                     beta = 1,
                     cost_conv = FALSE)
 ```
-
-```
-#>   habitat id_habitat id_patch    area perim capacity f_d1479.8358851873484_p0.05_beta1_graph_forest
-#> 1  forest          0        1 2610000 13000  2610000                                     22659462.5
-#> 2  forest          0        2 8800000 23000  8800000                                     12467998.8
-#> 3  forest          0        3 3270000 10800  3270000                                      2264071.3
-#> 4  forest          0        4 5330000 18800  5330000                                       340302.5
-#> 5  forest          0        5 6580000 18200  6580000                                     13018161.5
-#> 6  forest          0        6 2620000  8800  2620000                                     16655121.0
+```{r, echo = FALSE}
+print(res_g[["F"]][1:6, ])
 ```
 
 Every time a local metric is computed, it can be returned in R environment (here stored in `f`) but is also stored in the habitat patch attribute table, such that at the end this table contains every metric computed. Because of this, we can load the metric values in R later on, using the `get_graphab_metric` function. For instance:
 
-
-```r
+```{r, eval = FALSE}
 metric_table <- get_graphab_metric(proj_name = proj_name,
                    graph = "graph_forest")
 
@@ -495,8 +492,7 @@ Metrics can be filtered based on their specific name (one metric), the graph on 
 
 In the **specific case of multiple habitat graphs**, we can compute different components of the metrics, each corresponding to the contribution of a specific habitat type. We add the `multihab` argument for that purpose. For instance with the EC metric computed on the multiple habitat graph `graph_multi`:
 
-
-```r
+```{r, eval = FALSE}
 ec_multi <- graphab_metric(proj_name = proj_name,
                      graph = "graph_multi",
                      multihab = "all",
@@ -507,22 +503,15 @@ ec_multi <- graphab_metric(proj_name = proj_name,
                      cost_conv = TRUE)
 ec_multi
 ```
-
-```
-#> $`Metric name`
-#> [1] "EC_graph_multi"
-#> 
-#> $`Metric value table`
-#>         Graph       d    p beta     X0.0     X0.1     X1.1
-#> 1 graph_multi 813.815 0.05    1 82578203 66570524 29719307
+```{r, echo = FALSE}
+res_g[["EC_multi"]]
 ```
 
 The `X0.0` column indicates the contribution of the forest habitat nodes (habitat code 0) and the connections among them to the EC component (*intra*), whereas the `X0.1` column indicates the contribution of the connections among forest and shrubland patches (*inter*), and `X1.1` that of the shrubland patches and the connections among them (*intra*). Please see details about the formulas used for the decomposition in @savary2024multiple. 
 
 Similarly, in the case of local metrics, the contribution of each habitat type to the local connectivity metric computed for each node can be assessed. For the Flux metric for instance, we can know how much a node is connected to the nodes of each other habitat type:
 
-
-```r
+```{r,eval = FALSE}
 f_multi <- graphab_metric(proj_name = proj_name,
                     graph = "graph_multi",
                     multihab = "all",
@@ -533,22 +522,8 @@ f_multi <- graphab_metric(proj_name = proj_name,
                     cost_conv = FALSE)
 f_multi
 ```
-
-```
-#>   habitat id_habitat id_patch    area perim capacity f_d10000_p0.05_beta1.0_graph_multi
-#> 1  forest          0        1 2610000 13000  2610000                          117669295
-#> 2  forest          0        2 8800000 23000  8800000                          105967219
-#> 3  forest          0        3 3270000 10800  3270000                           64066487
-#> 4  forest          0        4 5330000 18800  5330000                           42748208
-#> 5  forest          0        5 6580000 18200  6580000                          119935793
-#> 6  forest          0        6 2620000  8800  2620000                          123382351
-#>   f_d10000_p0.05_beta1.1_graph_multi
-#> 1                           49122576
-#> 2                           46842866
-#> 3                           35918701
-#> 4                           29043326
-#> 5                           51041965
-#> 6                           50838307
+```{r, echo = FALSE}
+print(res_g[["F_multi"]][1:6, ])
 ```
 
 
@@ -569,8 +544,7 @@ It takes as arguments:
 
 
 For example:
-
-```r
+```{r, eval=FALSE}
 graphab_modul(proj_name = proj_name,
               graph = "graph_forest",
               dist = 10000,
@@ -586,53 +560,23 @@ Landscape graphs have been created and analysed by computing connectivity metric
 
 As seen before, users can import in the R environment the link set properties in a `data.frame` with an edge list format with the function `get_graphab_linkset` which takes as arguments the project name and the link set name.
 
-
-```r
+```{r, eval=FALSE}
 get_graphab_linkset(proj_name = proj_name,
                     linkset = "forest_link_planar")
 ```
-
-```
-#>    Id id1 id2       dist     distm
-#> 1 6-1   6   1  956.73717 5704.1631
-#> 2 7-1   7   1   82.24264  641.4214
-#> 3 2-1   2   1  206.00000  900.0000
-#> 4 7-2   7   2  313.62742 3679.8990
-#> 5 9-2   9   2 1508.91084 6311.2698
-#> 6 6-5   6   5   23.48528  582.8427
+```{r, echo = FALSE}
+print(res_g[["LK"]][1:6, ])
 ```
 
 Similarly, users can import the table in which are stored all the metrics computed in the project as well as the node properties (including their areas). The function `get_graphab_metric` takes as argument the project name. For instance for the metrics relative to the forest habitat: 
 
 
-
-```r
+```{r, eval=FALSE}
 get_graphab_metric(proj_name = proj_name,
                    habitat = "forest")
 ```
-
-```
-#>   habitat id_habitat id_patch    area perim capacity f_d1479.8358851873484_p0.05_beta1_graph_forest
-#> 1  forest          0        1 2610000 13000  2610000                                     22659462.5
-#> 2  forest          0        2 8800000 23000  8800000                                     12467998.8
-#> 3  forest          0        3 3270000 10800  3270000                                      2264071.3
-#> 4  forest          0        4 5330000 18800  5330000                                       340302.5
-#> 5  forest          0        5 6580000 18200  6580000                                     13018161.5
-#> 6  forest          0        6 2620000  8800  2620000                                     16655121.0
-#>   f_d813.8150263041181_p0.05_beta1.0_graph_multi f_d813.8150263041181_p0.05_beta1.1_graph_multi
-#> 1                                    15782142.44                                        4583715
-#> 2                                     6216475.10                                        2491953
-#> 3                                     1770605.62                                        1086021
-#> 4                                       40623.71                                        3134465
-#> 5                                     5147066.61                                        4090063
-#> 6                                     8630957.14                                        3730796
-#>   f_d10000_p0.05_beta1.0_graph_multi f_d10000_p0.05_beta1.1_graph_multi
-#> 1                          117669295                           49122576
-#> 2                          105967219                           46842866
-#> 3                           64066487                           35918701
-#> 4                           42748208                           29043326
-#> 5                          119935793                           51041965
-#> 6                          123382351                           50838307
+```{r, echo = FALSE}
+print(res_g[["MET"]][1:6, ])
 ```
 
 Finally, users can also create a graph from a Graphab link set and a given habitat type, and convert it into a graph object of class `igraph`. The imported graph has weighted links. Habitat patch attributes present in the Graphab project are included. A figure can be displayed automatically representing the graph on a map. The graph is given the topology of the selected link set.
@@ -646,8 +590,7 @@ The function `graphab_to_igraph` takes as arguments:
 * `fig`: Logical (`TRUE` or `FALSE`) indicating whether to plot a figure of the resulting spatial graph with `plot_graph_lg`.
 * `crds`: Logical (`TRUE` or `FALSE`) indicating whether to create an object of class `data.frame` with the node centroid spatial coordinates. 
 
-
-```r
+```{r, eval=FALSE}
 land_graph <- graphab_to_igraph(proj_name = proj_name,
                                 linkset = "forest_link_planar",
                                 habitat = "forest",
@@ -659,7 +602,10 @@ crds_patches <- land_graph[[2]]
 land_graph <- land_graph[[1]]
 ```
 
-
+```{r, echo = FALSE}
+crds_patches <- res_g[["CRDS"]]
+land_graph <- res_g[["LGRAPH"]]
+```
 
 The function returns a list of two objects: 
 
@@ -669,15 +615,12 @@ The function returns a list of two objects:
 This graph can be plotted on a map with `plot_graph_lg` with node sizes proportional to habitat patch area and link width inversely proportional to cost-distances:
 
 
-
-```r
+```{r}
 plot_graph_lg(land_graph,
               crds = crds_patches,
               mode = "spatial",
               node_size = "area")
 ```
-
-![plot of chunk unnamed-chunk-39](figure/unnamed-chunk-39-1.png)
 
 # Computational performance
 

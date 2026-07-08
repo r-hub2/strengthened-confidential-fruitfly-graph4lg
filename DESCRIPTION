@@ -55,7 +55,7 @@ VignetteBuilder: knitr, rmarkdown
 Config/roxygen2/version: 8.0.0
 RoxygenNote: 7.3.3
 NeedsCompilation: no
-Packaged: 2026-07-06 12:26:48 UTC; psavary
+Packaged: 2026-07-08 08:43:23 UTC; psavary
 Author: Paul Savary [aut, cre] (ORCID: <https://orcid.org/0000-0002-2104-9941>),
   Gilles Vuidel [ctb] (ORCID: <https://orcid.org/0000-0001-6330-6136>),
   Tyler Rudolph [ctb],

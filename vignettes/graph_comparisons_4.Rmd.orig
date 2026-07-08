@@ -17,7 +17,16 @@ vignette: >
 ---
   
   
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+collapse = TRUE,
+comment = "#>"
+)
 
+library(graph4lg)
+library(igraph)
+
+```
 
 
 # Introduction
@@ -45,7 +54,16 @@ The second data set (`data_ex`) was simulated as the first one but included only
 
 Here, we also rely on a data set created only for the vignettes (`data_tuto`) and containing several objects:
 
+```{r, echo = FALSE, eval = TRUE}
+data("data_tuto")
 
+mat_dps <- data_tuto[[1]]
+mat_pg <- data_tuto[[2]]
+graph_ci <- data_tuto[[3]]
+dmc <- data_tuto[[4]]
+land_graph <- data_tuto[[5]]
+mat_ld <- data_tuto[[6]]
+```
 
 We will also use Graphab projects already created for the vignettes.
 
@@ -86,8 +104,7 @@ In the following example, we will import a landscape graph made of the habitat p
 
 `land_graph` is the landscape graph made of the forest habitat patches occupied by the 50 populations. Its 1225 links are weighted by cost-distances between patches (`mat_ld`). It is a complete graph.
 
-
-```r
+```{r}
 land_graph <- gen_graph_topo(mat_w = mat_ld,
                              mat_topo = mat_ld,
                              topo = "comp")
@@ -95,29 +112,18 @@ land_graph <- gen_graph_topo(mat_w = mat_ld,
 # Plot the histogram of its link weights
 plot_w_hist(graph = land_graph)
 ```
-
-![plot of chunk unnamed-chunk-2](figure/unnamed-chunk-2-1.png)
 Using the function `plot_w_hist`, we see that its link weights almost follow a normal distribution with values ranging from 0 to 10,000 cost-distance units.
 
 
 We will compute the mean of the inverse weight of every link connected to its nodes. This metric `miw` is akin to the Flux metric computed in Graphab. It takes high values if a patch is well connected and close to other patches. We use the function `compute_node_metric`:
 
-
-```r
+```{r}
 miw_lg <- compute_node_metric(graph = land_graph, metrics = "miw")
 print(head(miw_lg))
-#>   ID          miw
-#> 1  1 0.0002740693
-#> 2 10 0.0003191601
-#> 3 11 0.0002856777
-#> 4 12 0.0003549221
-#> 5 13 0.0003657414
-#> 6 14 0.0011067178
 ```
 
 We include the values of this metric as a graph node attribute with the function `add_nodes_attr`:
-
-```r
+```{r}
 land_graph <- add_nodes_attr(graph = land_graph,
                              input = "df",
                              data = miw_lg,
@@ -126,15 +132,13 @@ land_graph <- add_nodes_attr(graph = land_graph,
 
 We now create a genetic graph from the simulated data set. For that purpose, we first compute a genetic distance matrix using the D~PS~ genetic distance.
 
-
-```r
+```{r, eval = FALSE}
 mat_dps <- mat_gen_dist(x = data_simul_genind, dist = "DPS")
 ```
 
 We use this distance matrix to create a complete genetic graph with `gen_graph_topo`:
 
-
-```r
+```{r}
 gen_comp_graph <- gen_graph_topo(mat_w = mat_dps,
                                  mat_topo = mat_dps,
                                  topo = "comp")
@@ -142,50 +146,29 @@ gen_comp_graph <- gen_graph_topo(mat_w = mat_dps,
 
 We plot the distribution of the link weights.
 
-
-```r
+```{r}
 plot_w_hist(graph = gen_comp_graph, 
             fill = "darkblue")
 ```
 
-![plot of chunk unnamed-chunk-7](figure/unnamed-chunk-7-1.png)
-
 
 We will compute the mean of the inverse weights of links connected to each node in the genetic graph `gen_comp_graph` and include it as a node attribute.
 
-
-```r
+```{r}
 miw_comp <- compute_node_metric(graph = gen_comp_graph, metrics = "miw")
 gen_comp_graph <- add_nodes_attr(graph = gen_comp_graph,
                                  input = "df",
                                  data = miw_comp,
                                  index = "ID")
+
 ```
 
 We can now **assess the correlation between these two metrics** using `graph_node_compar`:
 
-
-```r
+```{r}
 graph_node_compar(x = land_graph, y = gen_comp_graph,
                   metrics = c("miw", "miw"), method = "spearman",
                   weight = TRUE, test = TRUE)
-#> [[1]]
-#> [1] "Metric from graph x: miw"
-#> 
-#> [[2]]
-#> [1] "Metric from graph y: miw"
-#> 
-#> [[3]]
-#> [1] "Method used: spearman's correlation coefficient"
-#> 
-#> [[4]]
-#> [1] "Sample size: 50"
-#> 
-#> [[5]]
-#> [1] "Correlation coefficient: 0.723793517406963"
-#> 
-#> [[6]]
-#> [1] "p-value of the significance test: 2.86499806974383e-09"
 ```
 
 The two metrics are **highly correlated**, meaning that if a habitat patch is well connected, the population occupying this patch is less different from the other populations from a genetic point of view than if the habitat patch is not well connected. This is quite an expected result given that gene flow was largely driven by cost-distances between populations during the genetic simulations.
@@ -193,13 +176,10 @@ The two metrics are **highly correlated**, meaning that if a habitat patch is we
 
 Using complete graphs, visual representations are unclear because of link overlap. Building a Gabriel graph is a way to simplify graph topology. Gabriel graphs links will be computed from the Euclidean geographical distances between populations.
 
-
-```r
+```{r}
 
 mat_geo <- mat_geo_dist(data = pts_pop_simul,
                         ID = "ID", x = "x", y = "y")
-#> Coordinates were treated as projected coordinates. Check whether
-#>               it is the case.
 mat_geo <- reorder_mat(mat_geo, order = row.names(mat_dps))
 
 gen_gab_graph <- gen_graph_topo(mat_w = mat_dps,
@@ -219,9 +199,8 @@ plot_graph_lg(graph = gen_gab_graph,
               mode = "spatial",
               node_size = "miw",
               link_width = "inv_w")
-```
 
-![plot of chunk unnamed-chunk-10](figure/unnamed-chunk-10-1.png)
+```
 
 
 
@@ -244,8 +223,7 @@ For example, we will create a landscape graph from the cost-distance matrix usin
 
 
 We first create the thresholded landscape graph and plot it
-
-```r
+```{r}
 
 land_graph_thr <- gen_graph_thr(mat_w = mat_ld, mat_thr = mat_ld,
                              thr = 2000, mode = "larger")
@@ -255,21 +233,17 @@ plot_graph_lg(land_graph_thr,
               crds = pts_pop_simul,
               link_width = "inv_w", 
               pts_col = "#80C342")
-```
 
-![plot of chunk unnamed-chunk-11](figure/unnamed-chunk-11-1.png)
+```
 
 We then compare the topology of `land_graph_thr` and `gen_gab_graph` using the Matthews' correlation coefficient using `graph_topo_compar`:
 
-
-```r
+```{r}
 
 graph_topo_compar(obs_graph = land_graph_thr, 
                   pred_graph = gen_gab_graph,
                   mode = "mcc", 
                   directed = FALSE)
-#> Matthews Correlation Coefficient : 0.541875568864072
-#> [1] 0.5418756
 ```
 
 
@@ -282,13 +256,11 @@ Besides, we can **visually compare the topologies** of two graphs sharing the sa
 * `crds`: A `data.frame` with the spatial coordinates of the graph nodes (both `x` and `y`). It must have three columns: ID, x, and y.
 
 For example:
-
-```r
+```{r}
 graph_plot_compar(x = land_graph_thr, y = gen_gab_graph,
                   crds = pts_pop_simul)
-```
 
-![plot of chunk unnamed-chunk-13](figure/unnamed-chunk-13-1.png)
+```
 
 This representation clearly indicates where are the shared and unshared links.
 
@@ -319,21 +291,16 @@ Two different weighting schemes can be used to create the modules of the two gra
 
 In the following example, we compare `land_graph_thr` and `gen_gab_graph` with the default parameters (`algo='fast_greedy'` algorithm, optimal number of modules, links weighted by inverse distances (`node_inter="distance"`)).
 
-
-```r
+```{r}
 graph_modul_compar(x = land_graph_thr, 
                    y = gen_gab_graph)
-#> [1] "7 modules in graph 1 and 6 modules in graph 2"
-#> [1] "Adjusted Rand Index: 0.648832401029973"
-#> [1] 0.6488324
 ```
 
 The ARI value is relatively high meaning that modules are somehow similar.
 
 We can **check this result visually**. We first compute the modules in both graphs and include them as node attributes.
 
-
-```r
+```{r}
 module_land <- compute_graph_modul(graph = land_graph_thr, 
                                    algo = "fast_greedy",
                                    node_inter = "distance")
@@ -353,24 +320,18 @@ gen_gab_graph <- add_nodes_attr(graph = gen_gab_graph,
 
 We then plot both graphs, colouring their nodes depending on their module:
 
-
-```r
+```{r}
 plot_graph_lg(graph = land_graph_thr,
               mode = "spatial",
               crds = pts_pop_simul,
               module = "module")
 ```
-
-![plot of chunk unnamed-chunk-16](figure/unnamed-chunk-16-1.png)
-
-```r
+```{r}
 plot_graph_lg(graph = gen_gab_graph,
               mode = "spatial",
               crds = pts_pop_simul,
               module = "module")
 ```
-
-![plot of chunk unnamed-chunk-17](figure/unnamed-chunk-17-1.png)
 
 We easily visualise divergence and convergence in both module partitions.
 
